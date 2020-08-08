@@ -58,40 +58,43 @@ export abstract class MessageQueue extends EventEmitter {
    */
   abstract publish(): void;
 
-    private readonly _queuedPublishes: {
-        messages: PubsubMessage[],
-        callbacks: PublishCallback[],
-        callback?: PublishDone,
-    }[] = []
+  private readonly _queuedPublishes: {
+    messages: PubsubMessage[];
+    callbacks: PublishCallback[];
+    callback?: PublishDone;
+  }[] = [];
 
-    private _ongoingPublishRequests = 0
+  private _ongoingPublishRequests = 0;
 
-    _publish(
-        messages: PubsubMessage[],
-        callbacks: PublishCallback[],
-        callback?: PublishDone
-    ): void {
+  _publish(
+    messages: PubsubMessage[],
+    callbacks: PublishCallback[],
+    callback?: PublishDone
+  ): void {
+    if (
+      this._ongoingPublishRequests >
+      (this.batchOptions.maxConcurrentRequests ||
+        BATCH_LIMITS.maxConcurrentRequests!)
+    ) {
+      this._queuedPublishes.push({messages, callback, callbacks});
+      return;
+    }
 
-      if (this._ongoingPublishRequests > (this.batchOptions.maxConcurrentRequests || BATCH_LIMITS.maxConcurrentRequests!)) {
-        this._queuedPublishes.push({messages, callback, callbacks})
-        return
+    this._ongoingPublishRequests++;
+    this._doPublish(messages, callbacks, err => {
+      this._ongoingPublishRequests--;
+
+      if (typeof callback === 'function') {
+        callback(err);
       }
 
-        this._ongoingPublishRequests++
-        this._doPublish(messages, callbacks, (err) => {
-            this._ongoingPublishRequests--
+      const next = this._queuedPublishes.shift();
 
-            if (typeof callback === 'function') {
-                callback(err)
-            }
-
-            const next = this._queuedPublishes.shift()
-
-            if (next) {
-                this._publish(next.messages, next.callbacks, next.callback);
-            }
-        })
-    }
+      if (next) {
+        this._publish(next.messages, next.callbacks, next.callback);
+      }
+    });
+  }
 
   /**
    * Accepts a batch of messages and publishes them to the API.

@@ -20,7 +20,7 @@ export interface BatchPublishOptions {
   maxBytes?: number;
   maxMessages?: number;
   maxMilliseconds?: number;
-  maxConcurrentRequests?:number;
+  maxConcurrentRequests?: number;
 }
 
 /**

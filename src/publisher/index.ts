@@ -214,7 +214,10 @@ export class Publisher {
         maxBytes: Math.min(batching.maxBytes, BATCH_LIMITS.maxBytes!),
         maxMessages: Math.min(batching.maxMessages, BATCH_LIMITS.maxMessages!),
         maxMilliseconds: batching.maxMilliseconds,
-        maxConcurrentRequests: Math.min(batching.maxConcurrentRequests, BATCH_LIMITS.maxConcurrentRequests!),
+        maxConcurrentRequests: Math.min(
+          batching.maxConcurrentRequests,
+          BATCH_LIMITS.maxConcurrentRequests!
+        ),
       },
       gaxOpts,
       messageOrdering,
