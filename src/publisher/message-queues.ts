@@ -57,6 +57,42 @@ export abstract class MessageQueue extends EventEmitter {
    * @abstract
    */
   abstract publish(): void;
+
+    private readonly _queuedPublishes: {
+        messages: PubsubMessage[],
+        callbacks: PublishCallback[],
+        callback?: PublishDone,
+    }[] = []
+
+    private _ongoingPublishRequests = 0
+
+    _publish(
+        messages: PubsubMessage[],
+        callbacks: PublishCallback[],
+        callback?: PublishDone
+    ): void {
+
+        if (this._ongoingPublishRequests > 10) {
+            this._queuedPublishes.push({messages, callback, callbacks})
+            return
+        }
+
+        this._ongoingPublishRequests++
+        this._doPublish(messages, callbacks, (err) => {
+            this._ongoingPublishRequests--
+
+            if (typeof callback === 'function') {
+                callback(err)
+            }
+
+            const next = this._queuedPublishes.shift()
+
+            if (next) {
+                this._publish(next.messages, next.callbacks, next.callback);
+            }
+        })
+    }
+
   /**
    * Accepts a batch of messages and publishes them to the API.
    *
@@ -64,7 +100,7 @@ export abstract class MessageQueue extends EventEmitter {
    * @param {PublishCallback[]} callbacks The corresponding callback functions.
    * @param {function} [callback] Callback to be fired when publish is done.
    */
-  _publish(
+  _doPublish(
     messages: PubsubMessage[],
     callbacks: PublishCallback[],
     callback?: PublishDone
