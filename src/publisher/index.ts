@@ -42,6 +42,7 @@ export interface PublishOptions {
 export const BATCH_LIMITS: BatchPublishOptions = {
   maxBytes: Math.pow(1024, 2) * 9,
   maxMessages: 1000,
+  maxConcurrentRequests: 100,
 };
 
 /**
@@ -194,6 +195,7 @@ export class Publisher {
         maxBytes: defaultOptions.publish.maxOutstandingBytes,
         maxMessages: defaultOptions.publish.maxOutstandingMessages,
         maxMilliseconds: defaultOptions.publish.maxDelayMillis,
+        maxConcurrentRequests: defaultOptions.publish.maxConcurrentRequests,
       },
       messageOrdering: false,
       gaxOpts: {
@@ -212,6 +214,7 @@ export class Publisher {
         maxBytes: Math.min(batching.maxBytes, BATCH_LIMITS.maxBytes!),
         maxMessages: Math.min(batching.maxMessages, BATCH_LIMITS.maxMessages!),
         maxMilliseconds: batching.maxMilliseconds,
+        maxConcurrentRequests: Math.min(batching.maxConcurrentRequests, BATCH_LIMITS.maxConcurrentRequests!),
       },
       gaxOpts,
       messageOrdering,

@@ -19,7 +19,7 @@ import {EventEmitter} from 'events';
 
 import {BatchPublishOptions, MessageBatch} from './message-batch';
 import {PublishError} from './publish-error';
-import {Publisher, PubsubMessage, PublishCallback} from './';
+import {Publisher, PubsubMessage, PublishCallback, BATCH_LIMITS} from './';
 import {google} from '../../protos/protos';
 
 export interface PublishDone {
@@ -72,10 +72,10 @@ export abstract class MessageQueue extends EventEmitter {
         callback?: PublishDone
     ): void {
 
-        if (this._ongoingPublishRequests > 10) {
-            this._queuedPublishes.push({messages, callback, callbacks})
-            return
-        }
+      if (this._ongoingPublishRequests > (this.batchOptions.maxConcurrentRequests || BATCH_LIMITS.maxConcurrentRequests!)) {
+        this._queuedPublishes.push({messages, callback, callbacks})
+        return
+      }
 
         this._ongoingPublishRequests++
         this._doPublish(messages, callbacks, (err) => {

@@ -44,5 +44,8 @@ export const defaultOptions = {
 
     // The maximum time we'll wait to send batched messages, in milliseconds.
     maxDelayMillis: 10,
+
+    // The maximum number of concurrent publish gRPC requests we'll issue
+    maxConcurrentRequests: 10,
   },
 };
